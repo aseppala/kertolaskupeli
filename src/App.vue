@@ -29,12 +29,16 @@ const incorrectSound = new Audio('data:audio/wav;base64,UklGRiQEAABXQVZFZm10IBAA
 
 function playCorrectSound() {
   correctSound.currentTime = 0
-  correctSound.play().catch(() => {}) // Ignore errors if autoplay is blocked
+  correctSound.volume = 0.4
+  correctSound.src = 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3' // Magical sparkle
+  correctSound.play().catch(() => {})
 }
 
 function playIncorrectSound() {
   incorrectSound.currentTime = 0
-  incorrectSound.play().catch(() => {}) // Ignore errors if autoplay is blocked
+  incorrectSound.volume = 0.4
+  incorrectSound.src = 'https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3' // Wrong buzzer
+  incorrectSound.play().catch(() => {})
 }
 
 const correctAnswer = computed(() => num1.value * num2.value)
@@ -105,11 +109,11 @@ function submitAnswer() {
     // Streak bonus
     if (currentStreak.value >= STREAK_THRESHOLD) {
       points += STREAK_BONUS
-      feedback.value = `🐴 Oikein! +${points} p (Putki: ${currentStreak.value}) 🏇`
+      feedback.value = `🦄 Oikein! +${points} p (Putki: ${currentStreak.value}) ✨`
     } else if (responseTime < SPEED_BONUS_THRESHOLD) {
-      feedback.value = `🐴 Oikein! +${points} p (Nopea kuin hevonen!) 🏇`
+      feedback.value = `🦄 Oikein! +${points} p (Salamannopea!) 💫`
     } else {
-      feedback.value = `🐴 Oikein! +${points} p`
+      feedback.value = `🦄 Oikein! +${points} p ⭐`
     }
     
     score.value += points
@@ -117,7 +121,7 @@ function submitAnswer() {
   } else {
     currentStreak.value = 0
     playIncorrectSound()
-    feedback.value = `🐴 Väärin! Oikea vastaus oli ${correctAnswer.value}`
+    feedback.value = `🦄 Väärin! Oikea vastaus oli ${correctAnswer.value} 💔`
   }
   
   setTimeout(() => {
@@ -145,18 +149,18 @@ onUnmounted(() => {
 
 <template>
   <div class="game-container">
-    <h1>🐴 Hevosen Kertolaskupeli 🐴</h1>
+    <h1>🦄 Yksisarvisen Kertolaskupeli 🦄</h1>
     
     <div v-if="gameState === 'idle'" class="start-screen">
-      <div class="horse-emoji">🐎</div>
-      <p>Laukka kertolaskujen maailmaan!</p>
+      <div class="horse-emoji">🦄</div>
+      <p>Taikaa kertolaskujen maailmaan!</p>
       <ul>
-        <li>🏇 Vastaa mahdollisimman moneen kysymykseen 2 minuutissa</li>
-        <li>🥕 {{ BASE_POINTS }} pistettä jokaisesta oikeasta vastauksesta</li>
-        <li>⚡ {{ SPEED_BONUS_POINTS }} bonuspistettä vastauksista alle {{ SPEED_BONUS_THRESHOLD }} sekunnissa</li>
-        <li>🏆 {{ STREAK_BONUS }} bonuspistettä {{ STREAK_THRESHOLD }}+ oikean vastauksen putkilta</li>
+        <li>✨ Vastaa mahdollisimman moneen kysymykseen 2 minuutissa</li>
+        <li>⭐ {{ BASE_POINTS }} pistettä jokaisesta oikeasta vastauksesta</li>
+        <li>💫 {{ SPEED_BONUS_POINTS }} bonuspistettä vastauksista alle {{ SPEED_BONUS_THRESHOLD }} sekunnissa</li>
+        <li>� {{ STREAK_BONUS }} bonuspistettä {{ STREAK_THRESHOLD }}+ oikean vastauksen putkilta</li>
       </ul>
-      <button @click="startGame" class="btn-primary">🐴 Aloita laukka!</button>
+      <button @click="startGame" class="btn-primary">✨ Aloita taika!</button>
     </div>
 
     <div v-if="gameState === 'playing'" class="game-screen">
@@ -166,15 +170,15 @@ onUnmounted(() => {
           <span class="stat-value">{{ formattedTime }}</span>
         </div>
         <div class="stat">
-          <span class="stat-label">🥕 Pisteet:</span>
+          <span class="stat-label">⭐ Pisteet:</span>
           <span class="stat-value">{{ score }}</span>
         </div>
         <div class="stat">
-          <span class="stat-label">✅ Oikein:</span>
+          <span class="stat-label">✨ Oikein:</span>
           <span class="stat-value">{{ correctAnswers }}</span>
         </div>
         <div class="stat">
-          <span class="stat-label">🏆 Putki:</span>
+          <span class="stat-label">� Putki:</span>
           <span class="stat-value" :class="{ 'streak-active': currentStreak >= STREAK_THRESHOLD }">
             {{ currentStreak }}
           </span>
@@ -203,21 +207,21 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <div v-if="feedback" class="feedback" :class="{ 'correct': feedback.includes('🐴') && feedback.includes('Oikein'), 'incorrect': feedback.includes('🐴') && feedback.includes('Väärin') }">
+      <div v-if="feedback" class="feedback" :class="{ 'correct': feedback.includes('🦄') && feedback.includes('Oikein'), 'incorrect': feedback.includes('🦄') && feedback.includes('Väärin') }">
         {{ feedback }}
       </div>
     </div>
 
     <div v-if="gameState === 'finished'" class="finish-screen">
-      <div class="horse-emoji">🏇</div>
-      <h2>Maali saavutettu! 🎉</h2>
+      <div class="horse-emoji">🦄</div>
+      <h2>Taika onnistui! �</h2>
       <div class="final-stats">
         <div class="final-stat">
-          <span class="final-stat-label">🥕 Lopulliset pisteet:</span>
+          <span class="final-stat-label">⭐ Lopulliset pisteet:</span>
           <span class="final-stat-value">{{ score }}</span>
         </div>
         <div class="final-stat">
-          <span class="final-stat-label">✅ Oikeat vastaukset:</span>
+          <span class="final-stat-label">✨ Oikeat vastaukset:</span>
           <span class="final-stat-value">{{ correctAnswers }}</span>
         </div>
         <div class="final-stat">
@@ -225,7 +229,7 @@ onUnmounted(() => {
           <span class="final-stat-value">{{ correctAnswers > 0 ? (score / correctAnswers).toFixed(1) : 0 }}</span>
         </div>
       </div>
-      <button @click="startGame" class="btn-primary">🐴 Laukka uudelleen!</button>
+      <button @click="startGame" class="btn-primary">✨ Taika uudelleen!</button>
     </div>
   </div>
 </template>
@@ -236,17 +240,17 @@ onUnmounted(() => {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
-  background: linear-gradient(135deg, #f5e6d3 0%, #e8d4b8 100%);
+  background: linear-gradient(135deg, #FFE5F7 0%, #E0D4FF 50%, #D4F1FF 100%);
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  border: 4px solid #8b6914;
+  box-shadow: 0 10px 40px rgba(138, 43, 226, 0.3);
+  border: 4px solid #FF69B4;
 }
 
 h1 {
   font-size: 2.5rem;
   margin-bottom: 2rem;
-  color: #8b4513;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  color: #8B008B;
+  text-shadow: 2px 2px 4px rgba(255, 105, 180, 0.3);
 }
 
 .horse-emoji {
@@ -257,10 +261,10 @@ h1 {
 
 @keyframes bounce {
   0%, 100% {
-    transform: translateY(0);
+    transform: translateY(0) rotate(0deg);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-10px) rotate(5deg);
   }
 }
 
@@ -271,7 +275,7 @@ h1 {
 .start-screen p {
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
-  color: #654321;
+  color: #8B008B;
   font-weight: 600;
 }
 
@@ -279,12 +283,12 @@ h1 {
   text-align: left;
   display: inline-block;
   margin-bottom: 2rem;
-  color: #654321;
+  color: #8B008B;
   line-height: 1.8;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #d2691e 0%, #a0522d 100%);
+  background: linear-gradient(135deg, #FF69B4 0%, #9370DB 50%, #87CEEB 100%);
   color: white;
   border: none;
   padding: 1rem 2rem;
@@ -292,14 +296,14 @@ h1 {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 6px rgba(255, 105, 180, 0.4);
   font-weight: 600;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #a0522d 0%, #8b4513 100%);
+  background: linear-gradient(135deg, #9370DB 0%, #FF69B4 50%, #87CEEB 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 8px rgba(255, 105, 180, 0.6);
 }
 
 .btn-primary:disabled {
@@ -314,10 +318,10 @@ h1 {
   gap: 1rem;
   margin-bottom: 3rem;
   flex-wrap: wrap;
-  background-color: rgba(255, 255, 255, 0.7);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 182, 193, 0.3) 100%);
   padding: 1.5rem;
   border-radius: 12px;
-  border: 2px solid #d2691e;
+  border: 2px solid #FF69B4;
 }
 
 .stat {
@@ -328,7 +332,7 @@ h1 {
 
 .stat-label {
   font-size: 0.9rem;
-  color: #654321;
+  color: #8B008B;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 600;
@@ -337,13 +341,13 @@ h1 {
 .stat-value {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #8b4513;
+  color: #FF1493;
 }
 
 .streak-active {
-  color: #ff6b35 !important;
+  color: #FF69B4 !important;
   animation: pulse 0.5s infinite;
-  text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+  text-shadow: 0 0 10px rgba(255, 105, 180, 0.8);
 }
 
 .question-area {
@@ -354,19 +358,19 @@ h1 {
   font-size: 3rem;
   font-weight: bold;
   margin-bottom: 2rem;
-  color: #8b4513;
+  color: #8B008B;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  background-color: rgba(255, 255, 255, 0.7);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(224, 212, 255, 0.5) 100%);
   padding: 1.5rem;
   border-radius: 12px;
-  border: 2px solid #d2691e;
+  border: 2px solid #9370DB;
 }
 
 .operator, .equals {
-  color: #d2691e;
+  color: #FF69B4;
 }
 
 .answer-input {
@@ -374,17 +378,17 @@ h1 {
   padding: 0.8rem;
   width: 150px;
   text-align: center;
-  border: 3px solid #d2691e;
+  border: 3px solid #FF69B4;
   border-radius: 8px;
   margin-right: 1rem;
   transition: border-color 0.3s;
-  background-color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%);
 }
 
 .answer-input:focus {
   outline: none;
-  border-color: #8b4513;
-  box-shadow: 0 0 10px rgba(210, 105, 30, 0.3);
+  border-color: #9370DB;
+  box-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
 }
 
 .answer-input:disabled {
@@ -402,41 +406,41 @@ h1 {
 }
 
 .feedback.correct {
-  background: linear-gradient(135deg, #90EE90 0%, #98FB98 100%);
-  color: #1e8449;
+  background: linear-gradient(135deg, #E0BBE4 0%, #FFD1DC 100%);
+  color: #8B008B;
   font-weight: 600;
-  border-color: #228B22;
-  box-shadow: 0 4px 6px rgba(34, 139, 34, 0.3);
+  border-color: #9370DB;
+  box-shadow: 0 4px 6px rgba(147, 112, 219, 0.4);
 }
 
 .feedback.incorrect {
-  background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 100%);
-  color: #c0392b;
+  background: linear-gradient(135deg, #FFB6D9 0%, #D4A5A5 100%);
+  color: #8B0040;
   font-weight: 600;
-  border-color: #8B0000;
-  box-shadow: 0 4px 6px rgba(139, 0, 0, 0.3);
+  border-color: #FF1493;
+  box-shadow: 0 4px 6px rgba(255, 20, 147, 0.3);
 }
 
 .finish-screen h2 {
   font-size: 2rem;
-  color: #8b4513;
+  color: #8B008B;
   margin-bottom: 2rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  text-shadow: 2px 2px 4px rgba(255, 105, 180, 0.3);
 }
 
 .final-stats {
   margin: 2rem 0;
   padding: 2rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 248, 240, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 228, 225, 0.7) 100%);
   border-radius: 8px;
-  border: 3px solid #d2691e;
+  border: 3px solid #FF69B4;
 }
 
 .final-stat {
   display: flex;
   justify-content: space-between;
   padding: 1rem;
-  border-bottom: 2px solid #d2691e;
+  border-bottom: 2px solid #FFB6C1;
 }
 
 .final-stat:last-child {
@@ -445,14 +449,14 @@ h1 {
 
 .final-stat-label {
   font-size: 1.1rem;
-  color: #654321;
+  color: #8B008B;
   font-weight: 500;
 }
 
 .final-stat-value {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #8b4513;
+  color: #FF1493;
 }
 
 @keyframes fadeIn {
