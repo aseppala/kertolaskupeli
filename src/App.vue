@@ -20,6 +20,7 @@ const answerInputRef = ref<HTMLInputElement | null>(null)
 const num1 = ref(0)
 const num2 = ref(0)
 const feedback = ref('')
+const askedQuestions = ref<Set<string>>(new Set())
 
 let timerInterval: number | null = null
 
@@ -50,8 +51,32 @@ const formattedTime = computed(() => {
 })
 
 function generateQuestion() {
-  num1.value = Math.floor(Math.random() * 10) + 1
-  num2.value = Math.floor(Math.random() * 10) + 1
+  let newNum1: number
+  let newNum2: number
+  let questionKey: string
+  
+  // Try to generate a unique question
+  let attempts = 0
+  const maxAttempts = 100 // Total possible questions is 100 (10x10)
+  
+  do {
+    newNum1 = Math.floor(Math.random() * 10) + 1
+    newNum2 = Math.floor(Math.random() * 10) + 1
+    // Create a normalized key (order doesn't matter: 3x7 = 7x3)
+    questionKey = `${Math.min(newNum1, newNum2)}-${Math.max(newNum1, newNum2)}`
+    attempts++
+    
+    // If we've asked all possible questions or tried too many times, reset
+    if (attempts >= maxAttempts || askedQuestions.value.size >= 100) {
+      askedQuestions.value.clear()
+      break
+    }
+  } while (askedQuestions.value.has(questionKey))
+  
+  num1.value = newNum1
+  num2.value = newNum2
+  askedQuestions.value.add(questionKey)
+  
   questionStartTime.value = Date.now()
   feedback.value = ''
   userAnswer.value = ''
@@ -68,6 +93,7 @@ function startGame() {
   score.value = 0
   correctAnswers.value = 0
   currentStreak.value = 0
+  askedQuestions.value.clear() // Clear the set of asked questions
   generateQuestion()
   
   timerInterval = window.setInterval(() => {
