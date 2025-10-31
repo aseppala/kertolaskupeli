@@ -3,8 +3,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const GAME_DURATION = 120 // 2 minutes in seconds
 const BASE_POINTS = 10
-const SPEED_BONUS_THRESHOLD = 3 // seconds
-const SPEED_BONUS_POINTS = 5
+const GOAL_ANSWERS = 64 // Target number of answers
+const GOAL_TIME_PER_ANSWER = 1.875 // Target seconds per answer (120/64)
+const MAX_TIME_BONUS = 10 // Maximum bonus points for fastest answers
 const STREAK_THRESHOLD = 3
 const STREAK_BONUS = 5
 const LEADERBOARD_KEY = 'unicorn-math-leaderboard'
@@ -28,6 +29,7 @@ const answerInputRef = ref<HTMLInputElement | null>(null)
 const playerName = ref('')
 const leaderboard = ref<LeaderboardEntry[]>([])
 const showLeaderboard = ref(false)
+const totalAnswerTime = ref(0) // Track total time spent on correct answers
 
 const num1 = ref(0)
 const num2 = ref(0)
@@ -150,6 +152,7 @@ function startGame() {
   score.value = 0
   correctAnswers.value = 0
   currentStreak.value = 0
+  totalAnswerTime.value = 0
   askedQuestions.value.clear() // Clear the set of asked questions
   generateQuestion()
   
@@ -179,10 +182,14 @@ function submitAnswer() {
   if (answer === correctAnswer.value) {
     let points = BASE_POINTS
     
-    // Speed bonus
-    if (responseTime < SPEED_BONUS_THRESHOLD) {
-      points += SPEED_BONUS_POINTS
-    }
+    // Track total answer time for correct answers
+    totalAnswerTime.value += responseTime
+    
+    // Linear time-based bonus
+    // Fastest (0s) gets MAX_TIME_BONUS, at GOAL_TIME_PER_ANSWER gets half bonus, slower gets less
+    // Formula: bonus = MAX_TIME_BONUS * max(0, (2 * GOAL_TIME_PER_ANSWER - responseTime) / (2 * GOAL_TIME_PER_ANSWER))
+    const timeBonus = Math.max(0, Math.round(MAX_TIME_BONUS * (2 * GOAL_TIME_PER_ANSWER - responseTime) / (2 * GOAL_TIME_PER_ANSWER)))
+    points += timeBonus
     
     // Update streak
     currentStreak.value++
@@ -193,11 +200,9 @@ function submitAnswer() {
     // Streak bonus
     if (currentStreak.value >= STREAK_THRESHOLD) {
       points += STREAK_BONUS
-      feedback.value = `🦄 Oikein! +${points} p (Putki: ${currentStreak.value}) ✨`
-    } else if (responseTime < SPEED_BONUS_THRESHOLD) {
-      feedback.value = `🦄 Oikein! +${points} p (Salamannopea!) 💫`
+      feedback.value = `🦄 Oikein! +${points} p (Putki: ${currentStreak.value}, Aikabonus: +${timeBonus}) ✨`
     } else {
-      feedback.value = `🦄 Oikein! +${points} p ⭐`
+      feedback.value = `🦄 Oikein! +${points} p (Aikabonus: +${timeBonus}) ⭐`
     }
     
     score.value += points
@@ -254,9 +259,9 @@ onUnmounted(() => {
       </div>
       
       <ul>
-        <li>✨ Vastaa mahdollisimman moneen kysymykseen 2 minuutissa</li>
+        <li>🎯 Tavoite: {{ GOAL_ANSWERS }} oikeaa vastausta 2 minuutissa</li>
         <li>⭐ {{ BASE_POINTS }} pistettä jokaisesta oikeasta vastauksesta</li>
-        <li>💫 {{ SPEED_BONUS_POINTS }} bonuspistettä vastauksista alle {{ SPEED_BONUS_THRESHOLD }} sekunnissa</li>
+        <li>⚡ 0-{{ MAX_TIME_BONUS }} aikabonus (enemmän = nopeampi vastaus)</li>
         <li>🌈 {{ STREAK_BONUS }} bonuspistettä {{ STREAK_THRESHOLD }}+ oikean vastauksen putkilta</li>
       </ul>
       
@@ -330,8 +335,8 @@ onUnmounted(() => {
           <span class="final-stat-value">{{ correctAnswers }}</span>
         </div>
         <div class="final-stat">
-          <span class="final-stat-label">📊 Keskimäärin pisteitä per vastaus:</span>
-          <span class="final-stat-value">{{ correctAnswers > 0 ? (score / correctAnswers).toFixed(1) : 0 }}</span>
+          <span class="final-stat-label">⚡ Keskimääräinen nopeus:</span>
+          <span class="final-stat-value">{{ correctAnswers > 0 ? (totalAnswerTime / correctAnswers).toFixed(2) : 0 }} s</span>
         </div>
       </div>
       <button @click="startGame" class="btn-primary">✨ Pelaa uudelleen!</button>
