@@ -25,7 +25,20 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B7355 0%, #D2B48C 50%, #8B7355 100%);
+  position: relative;
+}
+
+body::before {
+  content: '🐴 🥕 🏇 🐎 🌾';
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8rem;
+  opacity: 0.05;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 #app {
