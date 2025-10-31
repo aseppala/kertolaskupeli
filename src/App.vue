@@ -15,6 +15,7 @@ const correctAnswers = ref(0)
 const currentStreak = ref(0)
 const userAnswer = ref('')
 const questionStartTime = ref(0)
+const answerInputRef = ref<HTMLInputElement | null>(null)
 
 const num1 = ref(0)
 const num2 = ref(0)
@@ -36,6 +37,11 @@ function generateQuestion() {
   questionStartTime.value = Date.now()
   feedback.value = ''
   userAnswer.value = ''
+  
+  // Focus the input on next tick
+  setTimeout(() => {
+    answerInputRef.value?.focus()
+  }, 0)
 }
 
 function startGame() {
@@ -82,18 +88,18 @@ function submitAnswer() {
     // Streak bonus
     if (currentStreak.value >= STREAK_THRESHOLD) {
       points += STREAK_BONUS
-      feedback.value = `✓ Correct! +${points} pts (Streak: ${currentStreak.value})`
+      feedback.value = `✓ Oikein! +${points} p (Putki: ${currentStreak.value})`
     } else if (responseTime < SPEED_BONUS_THRESHOLD) {
-      feedback.value = `✓ Correct! +${points} pts (Speed bonus!)`
+      feedback.value = `✓ Oikein! +${points} p (Nopea!)`
     } else {
-      feedback.value = `✓ Correct! +${points} pts`
+      feedback.value = `✓ Oikein! +${points} p`
     }
     
     score.value += points
     correctAnswers.value++
   } else {
     currentStreak.value = 0
-    feedback.value = `✗ Wrong! The answer was ${correctAnswer.value}`
+    feedback.value = `✗ Väärin! Oikea vastaus oli ${correctAnswer.value}`
   }
   
   setTimeout(() => {
@@ -124,32 +130,32 @@ onUnmounted(() => {
     <h1>Kertolaskupeli</h1>
     
     <div v-if="gameState === 'idle'" class="start-screen">
-      <p>Practice your multiplication tables (1-10)!</p>
+      <p>Harjoittele kertolaskuja (1-10)!</p>
       <ul>
-        <li>Answer as many questions as you can in 2 minutes</li>
-        <li>Get {{ BASE_POINTS }} points per correct answer</li>
-        <li>Bonus {{ SPEED_BONUS_POINTS }} points for answers under {{ SPEED_BONUS_THRESHOLD }} seconds</li>
-        <li>Bonus {{ STREAK_BONUS }} points for {{ STREAK_THRESHOLD }}+ correct streak</li>
+        <li>Vastaa mahdollisimman moneen kysymykseen 2 minuutissa</li>
+        <li>{{ BASE_POINTS }} pistettä jokaisesta oikeasta vastauksesta</li>
+        <li>{{ SPEED_BONUS_POINTS }} bonuspistettä vastauksista alle {{ SPEED_BONUS_THRESHOLD }} sekunnissa</li>
+        <li>{{ STREAK_BONUS }} bonuspistettä {{ STREAK_THRESHOLD }}+ oikean vastauksen putkilta</li>
       </ul>
-      <button @click="startGame" class="btn-primary">Start Game</button>
+      <button @click="startGame" class="btn-primary">Aloita peli</button>
     </div>
 
     <div v-if="gameState === 'playing'" class="game-screen">
       <div class="stats">
         <div class="stat">
-          <span class="stat-label">Time:</span>
+          <span class="stat-label">Aika:</span>
           <span class="stat-value">{{ formattedTime }}</span>
         </div>
         <div class="stat">
-          <span class="stat-label">Score:</span>
+          <span class="stat-label">Pisteet:</span>
           <span class="stat-value">{{ score }}</span>
         </div>
         <div class="stat">
-          <span class="stat-label">Correct:</span>
+          <span class="stat-label">Oikein:</span>
           <span class="stat-value">{{ correctAnswers }}</span>
         </div>
         <div class="stat">
-          <span class="stat-label">Streak:</span>
+          <span class="stat-label">Putki:</span>
           <span class="stat-value" :class="{ 'streak-active': currentStreak >= STREAK_THRESHOLD }">
             {{ currentStreak }}
           </span>
@@ -166,15 +172,15 @@ onUnmounted(() => {
         
         <input
           v-model="userAnswer"
+          ref="answerInputRef"
           type="number"
           class="answer-input"
           placeholder="?"
-          autofocus
           :disabled="feedback !== ''"
         />
         
         <button @click="submitAnswer" class="btn-primary" :disabled="!userAnswer || feedback !== ''">
-          Submit
+          Vastaa
         </button>
       </div>
 
@@ -184,22 +190,22 @@ onUnmounted(() => {
     </div>
 
     <div v-if="gameState === 'finished'" class="finish-screen">
-      <h2>Game Over!</h2>
+      <h2>Peli päättyi!</h2>
       <div class="final-stats">
         <div class="final-stat">
-          <span class="final-stat-label">Final Score:</span>
+          <span class="final-stat-label">Lopulliset pisteet:</span>
           <span class="final-stat-value">{{ score }}</span>
         </div>
         <div class="final-stat">
-          <span class="final-stat-label">Correct Answers:</span>
+          <span class="final-stat-label">Oikeat vastaukset:</span>
           <span class="final-stat-value">{{ correctAnswers }}</span>
         </div>
         <div class="final-stat">
-          <span class="final-stat-label">Average Points per Answer:</span>
+          <span class="final-stat-label">Keskimäärin pisteitä per vastaus:</span>
           <span class="final-stat-value">{{ correctAnswers > 0 ? (score / correctAnswers).toFixed(1) : 0 }}</span>
         </div>
       </div>
-      <button @click="startGame" class="btn-primary">Play Again</button>
+      <button @click="startGame" class="btn-primary">Pelaa uudelleen</button>
     </div>
   </div>
 </template>
