@@ -216,6 +216,9 @@ onUnmounted(() => {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 h1 {
@@ -231,14 +234,14 @@ h1 {
 .start-screen p {
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
-  color: #34495e;
+  color: #2c3e50;
 }
 
 .start-screen ul {
   text-align: left;
   display: inline-block;
   margin-bottom: 2rem;
-  color: #555;
+  color: #2c3e50;
   line-height: 1.8;
 }
 
@@ -278,9 +281,10 @@ h1 {
 
 .stat-label {
   font-size: 0.9rem;
-  color: #7f8c8d;
+  color: #555;
   text-transform: uppercase;
   letter-spacing: 1px;
+  font-weight: 600;
 }
 
 .stat-value {
@@ -344,12 +348,14 @@ h1 {
 
 .feedback.correct {
   background-color: #d5f4e6;
-  color: #27ae60;
+  color: #1e8449;
+  font-weight: 600;
 }
 
 .feedback.incorrect {
   background-color: #fadbd8;
-  color: #e74c3c;
+  color: #c0392b;
+  font-weight: 600;
 }
 
 .finish-screen h2 {
@@ -378,7 +384,8 @@ h1 {
 
 .final-stat-label {
   font-size: 1.1rem;
-  color: #555;
+  color: #2c3e50;
+  font-weight: 500;
 }
 
 .final-stat-value {
