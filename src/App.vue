@@ -7,6 +7,15 @@ const SPEED_BONUS_THRESHOLD = 3 // seconds
 const SPEED_BONUS_POINTS = 5
 const STREAK_THRESHOLD = 3
 const STREAK_BONUS = 5
+const LEADERBOARD_KEY = 'unicorn-math-leaderboard'
+const MAX_LEADERBOARD_ENTRIES = 10
+
+interface LeaderboardEntry {
+  name: string
+  score: number
+  correctAnswers: number
+  date: string
+}
 
 const gameState = ref<'idle' | 'playing' | 'finished'>('idle')
 const timeLeft = ref(GAME_DURATION)
@@ -16,6 +25,9 @@ const currentStreak = ref(0)
 const userAnswer = ref('')
 const questionStartTime = ref(0)
 const answerInputRef = ref<HTMLInputElement | null>(null)
+const playerName = ref('')
+const leaderboard = ref<LeaderboardEntry[]>([])
+const showLeaderboard = ref(false)
 
 const num1 = ref(0)
 const num2 = ref(0)
@@ -49,6 +61,46 @@ const formattedTime = computed(() => {
   const seconds = timeLeft.value % 60
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 })
+
+function loadLeaderboard() {
+  try {
+    const saved = localStorage.getItem(LEADERBOARD_KEY)
+    if (saved) {
+      leaderboard.value = JSON.parse(saved)
+    }
+  } catch (error) {
+    console.error('Failed to load leaderboard:', error)
+    leaderboard.value = []
+  }
+}
+
+function saveToLeaderboard() {
+  if (!playerName.value.trim()) return
+  
+  const entry: LeaderboardEntry = {
+    name: playerName.value.trim(),
+    score: score.value,
+    correctAnswers: correctAnswers.value,
+    date: new Date().toLocaleDateString('fi-FI')
+  }
+  
+  leaderboard.value.push(entry)
+  leaderboard.value.sort((a, b) => b.score - a.score)
+  leaderboard.value = leaderboard.value.slice(0, MAX_LEADERBOARD_ENTRIES)
+  
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard.value))
+  } catch (error) {
+    console.error('Failed to save leaderboard:', error)
+  }
+}
+
+function clearLeaderboard() {
+  if (confirm('Haluatko varmasti tyhjentää tulostaulukon?')) {
+    leaderboard.value = []
+    localStorage.removeItem(LEADERBOARD_KEY)
+  }
+}
 
 function generateQuestion() {
   let newNum1: number
@@ -88,6 +140,11 @@ function generateQuestion() {
 }
 
 function startGame() {
+  if (!playerName.value.trim()) {
+    alert('Anna nimesi ensin! 🦄')
+    return
+  }
+  
   gameState.value = 'playing'
   timeLeft.value = GAME_DURATION
   score.value = 0
@@ -110,6 +167,7 @@ function endGame() {
     clearInterval(timerInterval)
     timerInterval = null
   }
+  saveToLeaderboard()
 }
 
 function submitAnswer() {
@@ -163,6 +221,7 @@ function handleKeyPress(event: KeyboardEvent) {
 
 onMounted(() => {
   window.addEventListener('keypress', handleKeyPress)
+  loadLeaderboard()
 })
 
 onUnmounted(() => {
@@ -179,14 +238,30 @@ onUnmounted(() => {
     
     <div v-if="gameState === 'idle'" class="start-screen">
       <div class="horse-emoji">🦄</div>
-      <p>Taikaa kertolaskujen maailmaan!</p>
+      <p>Tervetuloa kertolaskupeliin!</p>
+      
+      <div class="name-input-section">
+        <label for="playerName">Anna nimesi:</label>
+        <input
+          id="playerName"
+          v-model="playerName"
+          type="text"
+          class="name-input"
+          placeholder="Pelaajan nimi"
+          maxlength="20"
+          @keypress.enter="startGame"
+        />
+      </div>
+      
       <ul>
         <li>✨ Vastaa mahdollisimman moneen kysymykseen 2 minuutissa</li>
         <li>⭐ {{ BASE_POINTS }} pistettä jokaisesta oikeasta vastauksesta</li>
         <li>💫 {{ SPEED_BONUS_POINTS }} bonuspistettä vastauksista alle {{ SPEED_BONUS_THRESHOLD }} sekunnissa</li>
-        <li>� {{ STREAK_BONUS }} bonuspistettä {{ STREAK_THRESHOLD }}+ oikean vastauksen putkilta</li>
+        <li>🌈 {{ STREAK_BONUS }} bonuspistettä {{ STREAK_THRESHOLD }}+ oikean vastauksen putkilta</li>
       </ul>
-      <button @click="startGame" class="btn-primary">✨ Aloita taika!</button>
+      
+      <button @click="startGame" class="btn-primary">✨ Aloita peli!</button>
+      <button @click="showLeaderboard = true" class="btn-secondary">🏆 Tulostaulu</button>
     </div>
 
     <div v-if="gameState === 'playing'" class="game-screen">
@@ -240,8 +315,12 @@ onUnmounted(() => {
 
     <div v-if="gameState === 'finished'" class="finish-screen">
       <div class="horse-emoji">🦄</div>
-      <h2>Taika onnistui! �</h2>
+      <h2>Hienoa työtä! 🌟</h2>
       <div class="final-stats">
+        <div class="final-stat">
+          <span class="final-stat-label">👤 Pelaaja:</span>
+          <span class="final-stat-value">{{ playerName }}</span>
+        </div>
         <div class="final-stat">
           <span class="final-stat-label">⭐ Lopulliset pisteet:</span>
           <span class="final-stat-value">{{ score }}</span>
@@ -255,7 +334,36 @@ onUnmounted(() => {
           <span class="final-stat-value">{{ correctAnswers > 0 ? (score / correctAnswers).toFixed(1) : 0 }}</span>
         </div>
       </div>
-      <button @click="startGame" class="btn-primary">✨ Taika uudelleen!</button>
+      <button @click="startGame" class="btn-primary">✨ Pelaa uudelleen!</button>
+      <button @click="showLeaderboard = true" class="btn-secondary">🏆 Tulostaulu</button>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div v-if="showLeaderboard" class="modal-overlay" @click="showLeaderboard = false">
+      <div class="modal-content" @click.stop>
+        <h2>🏆 Tulostaulu 🏆</h2>
+        <div v-if="leaderboard.length === 0" class="empty-leaderboard">
+          Ei vielä tuloksia. Ole ensimmäinen! 🦄
+        </div>
+        <div v-else class="leaderboard-list">
+          <div
+            v-for="(entry, index) in leaderboard"
+            :key="index"
+            class="leaderboard-entry"
+            :class="{ 'top-entry': index < 3 }"
+          >
+            <span class="rank">{{ index + 1 }}.</span>
+            <span class="player-name">{{ entry.name }}</span>
+            <span class="player-score">{{ entry.score }} p</span>
+            <span class="player-answers">{{ entry.correctAnswers }} oikein</span>
+            <span class="player-date">{{ entry.date }}</span>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button @click="showLeaderboard = false" class="btn-primary">Sulje</button>
+          <button @click="clearLeaderboard" class="btn-danger">Tyhjennä</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -502,6 +610,258 @@ h1 {
   }
   50% {
     transform: scale(1.1);
+  }
+}
+
+/* Name Input Section */
+.name-input-section {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.name-input-section label {
+  display: block;
+  font-size: 1.1rem;
+  color: #8B008B;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.name-input {
+  width: 80%;
+  max-width: 300px;
+  padding: 0.75rem 1rem;
+  font-size: 1.1rem;
+  border: 3px solid #FF69B4;
+  border-radius: 8px;
+  background: white;
+  color: #8B008B;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.name-input:focus {
+  outline: none;
+  border-color: #9370DB;
+  box-shadow: 0 0 10px rgba(147, 112, 219, 0.4);
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: linear-gradient(135deg, #9370DB 0%, #87CEEB 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 6px rgba(147, 112, 219, 0.4);
+  font-weight: 600;
+  margin-left: 1rem;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #87CEEB 0%, #9370DB 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(147, 112, 219, 0.6);
+}
+
+/* Danger Button */
+.btn-danger {
+  background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 3px 5px rgba(255, 107, 107, 0.4);
+  font-weight: 600;
+  margin-left: 1rem;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #EE5A6F 0%, #FF6B6B 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 7px rgba(255, 107, 107, 0.6);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(139, 0, 139, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(255, 105, 180, 0.5);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-content h2 {
+  color: #FF69B4;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 2rem;
+  text-shadow: 2px 2px 4px rgba(147, 112, 219, 0.3);
+}
+
+.empty-leaderboard {
+  text-align: center;
+  color: #8B008B;
+  font-size: 1.2rem;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.leaderboard-entry {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 100%);
+  border-radius: 10px;
+  transition: all 0.3s;
+  font-size: 0.95rem;
+}
+
+.leaderboard-entry:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 10px rgba(255, 105, 180, 0.3);
+}
+
+.leaderboard-entry.top-entry {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(255, 215, 0, 0.4);
+}
+
+.leaderboard-entry .rank {
+  font-weight: bold;
+  color: #8B008B;
+  font-size: 1.2rem;
+}
+
+.leaderboard-entry.top-entry .rank {
+  color: #8B4513;
+}
+
+.leaderboard-entry .player-name {
+  color: #FF69B4;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.leaderboard-entry.top-entry .player-name {
+  color: #8B4513;
+}
+
+.leaderboard-entry .player-score {
+  color: #9370DB;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.leaderboard-entry.top-entry .player-score {
+  color: #8B4513;
+}
+
+.leaderboard-entry .player-answers {
+  color: #87CEEB;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.leaderboard-entry.top-entry .player-answers {
+  color: #8B4513;
+}
+
+.leaderboard-entry .player-date {
+  color: #999;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.leaderboard-entry.top-entry .player-date {
+  color: #8B4513;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .leaderboard-entry {
+    grid-template-columns: 30px 1fr;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .leaderboard-entry .player-answers,
+  .leaderboard-entry .player-date {
+    grid-column: 2;
+    font-size: 0.75rem;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+  }
+  
+  .btn-secondary,
+  .btn-danger {
+    margin-left: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
   }
 }
 </style>
