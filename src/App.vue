@@ -439,6 +439,8 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Ribeye&display=swap');
+
 .game-container {
   max-width: 600px;
   margin: 0 auto;
@@ -451,6 +453,7 @@ onUnmounted(() => {
 }
 
 h1 {
+  font-family: 'Ribeye', cursive;
   font-size: 2.5rem;
   margin-bottom: 2rem;
   color: #8B008B;
