@@ -19,13 +19,12 @@ interface LeaderboardEntry {
 }
 
 const gameState = ref<'idle' | 'playing' | 'finished'>('idle')
+const gameMode = ref<'easy' | 'hard'>('easy') // Game difficulty mode
 const timeLeft = ref(GAME_DURATION)
 const score = ref(0)
 const correctAnswers = ref(0)
 const currentStreak = ref(0)
-const userAnswer = ref('')
 const questionStartTime = ref(0)
-const answerInputRef = ref<HTMLInputElement | null>(null)
 const playerName = ref('')
 const leaderboard = ref<LeaderboardEntry[]>([])
 const showLeaderboard = ref(false)
@@ -35,6 +34,9 @@ const num1 = ref(0)
 const num2 = ref(0)
 const feedback = ref('')
 const askedQuestions = ref<Set<string>>(new Set())
+const answerOptions = ref<number[]>([]) // Three answer options for easy mode
+const userAnswer = ref('') // Text input for hard mode
+const answerInputRef = ref<HTMLInputElement | null>(null)
 
 let timerInterval: number | null = null
 
@@ -131,14 +133,31 @@ function generateQuestion() {
   num2.value = newNum2
   askedQuestions.value.add(questionKey)
   
+  // Generate three answer options for easy mode
+  if (gameMode.value === 'easy') {
+    const correctAnswer = newNum1 * newNum2
+    const options = new Set<number>([correctAnswer])
+    
+    // Generate two wrong answers
+    while (options.size < 3) {
+      // Generate plausible wrong answers within a reasonable range
+      const offset = Math.floor(Math.random() * 20) - 10 // -10 to +9
+      const wrongAnswer = correctAnswer + offset
+      if (wrongAnswer > 0 && wrongAnswer !== correctAnswer && wrongAnswer <= 100) {
+        options.add(wrongAnswer)
+      }
+    }
+    
+    // Shuffle the options
+    answerOptions.value = Array.from(options).sort(() => Math.random() - 0.5)
+  } else {
+    // Hard mode: clear user input and focus
+    userAnswer.value = ''
+    answerInputRef.value?.focus()
+  }
+  
   questionStartTime.value = Date.now()
   feedback.value = ''
-  userAnswer.value = ''
-  
-  // Focus the input on next tick
-  setTimeout(() => {
-    answerInputRef.value?.focus()
-  }, 0)
 }
 
 function startGame() {
@@ -173,13 +192,23 @@ function endGame() {
   saveToLeaderboard()
 }
 
-function submitAnswer() {
-  if (!userAnswer.value || gameState.value !== 'playing') return
+function submitAnswer(answer?: number) {
+  if (gameState.value !== 'playing' || feedback.value !== '') return
   
-  const answer = parseInt(userAnswer.value)
+  // For hard mode, get answer from text input
+  let finalAnswer: number
+  if (gameMode.value === 'hard') {
+    if (!userAnswer.value) return
+    finalAnswer = parseInt(userAnswer.value)
+  } else {
+    // Easy mode: answer comes from button click
+    if (answer === undefined) return
+    finalAnswer = answer
+  }
+  
   const responseTime = (Date.now() - questionStartTime.value) / 1000
   
-  if (answer === correctAnswer.value) {
+  if (finalAnswer === correctAnswer.value) {
     let points = BASE_POINTS
     
     // Track total answer time for correct answers
@@ -219,7 +248,7 @@ function submitAnswer() {
 }
 
 function handleKeyPress(event: KeyboardEvent) {
-  if (event.key === 'Enter' && gameState.value === 'playing') {
+  if (event.key === 'Enter' && gameState.value === 'playing' && gameMode.value === 'hard') {
     submitAnswer()
   }
 }
@@ -256,6 +285,26 @@ onUnmounted(() => {
           maxlength="20"
           @keypress.enter="startGame"
         />
+      </div>
+
+      <div class="mode-selection">
+        <label>Valitse vaikeustaso:</label>
+        <div class="mode-buttons">
+          <button 
+            @click="gameMode = 'easy'" 
+            class="mode-button"
+            :class="{ 'mode-active': gameMode === 'easy' }"
+          >
+            🌟 Helppo (3 vaihtoehtoa)
+          </button>
+          <button 
+            @click="gameMode = 'hard'" 
+            class="mode-button"
+            :class="{ 'mode-active': gameMode === 'hard' }"
+          >
+            🔥 Vaikea (kirjoita vastaus)
+          </button>
+        </div>
       </div>
       
       <ul>
@@ -299,18 +348,34 @@ onUnmounted(() => {
           <span class="equals">=</span>
         </div>
         
-        <input
-          v-model="userAnswer"
-          ref="answerInputRef"
-          type="number"
-          class="answer-input"
-          placeholder="?"
-          :disabled="feedback !== ''"
-        />
-        
-        <button @click="submitAnswer" class="btn-primary" :disabled="!userAnswer || feedback !== ''">
-          Vastaa
-        </button>
+        <!-- Easy mode: Multiple choice buttons -->
+        <div v-if="gameMode === 'easy'" class="answer-options">
+          <button
+            v-for="option in answerOptions"
+            :key="option"
+            @click="submitAnswer(option)"
+            class="answer-option"
+            :disabled="feedback !== ''"
+          >
+            {{ option }}
+          </button>
+        </div>
+
+        <!-- Hard mode: Text input -->
+        <div v-else class="answer-input-section">
+          <input
+            v-model="userAnswer"
+            ref="answerInputRef"
+            type="number"
+            class="answer-input"
+            placeholder="?"
+            :disabled="feedback !== ''"
+          />
+          
+          <button @click="submitAnswer()" class="btn-primary" :disabled="!userAnswer || feedback !== ''">
+            Vastaa
+          </button>
+        </div>
       </div>
 
       <div v-if="feedback" class="feedback" :class="{ 'correct': feedback.includes('🦄') && feedback.includes('Oikein'), 'incorrect': feedback.includes('🦄') && feedback.includes('Väärin') }">
@@ -512,6 +577,55 @@ h1 {
   color: #FF69B4;
 }
 
+.answer-options {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.answer-option {
+  font-size: 2rem;
+  padding: 1rem 2rem;
+  min-width: 120px;
+  text-align: center;
+  border: 3px solid #FF69B4;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%);
+  color: #8B008B;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 6px rgba(255, 105, 180, 0.3);
+}
+
+.answer-option:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FFB6D9 0%, #FFD1DC 100%);
+  border-color: #9370DB;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(147, 112, 219, 0.4);
+}
+
+.answer-option:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(255, 105, 180, 0.3);
+}
+
+.answer-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.answer-input-section {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
 .answer-input {
   font-size: 2rem;
   padding: 0.8rem;
@@ -519,7 +633,6 @@ h1 {
   text-align: center;
   border: 3px solid #FF69B4;
   border-radius: 8px;
-  margin-right: 1rem;
   transition: border-color 0.3s;
   background: linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%);
 }
@@ -650,6 +763,54 @@ h1 {
   outline: none;
   border-color: #9370DB;
   box-shadow: 0 0 10px rgba(147, 112, 219, 0.4);
+}
+
+/* Mode Selection */
+.mode-selection {
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.mode-selection label {
+  display: block;
+  font-size: 1.1rem;
+  color: #8B008B;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mode-button {
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  border: 3px solid #FF69B4;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%);
+  color: #8B008B;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(255, 105, 180, 0.2);
+}
+
+.mode-button:hover {
+  background: linear-gradient(135deg, #FFD1DC 0%, #FFB6D9 100%);
+  border-color: #9370DB;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(147, 112, 219, 0.3);
+}
+
+.mode-button.mode-active {
+  background: linear-gradient(135deg, #9370DB 0%, #FF69B4 100%);
+  color: white;
+  border-color: #8B008B;
+  box-shadow: 0 4px 8px rgba(147, 112, 219, 0.5);
 }
 
 /* Secondary Button */
@@ -918,12 +1079,21 @@ h1 {
     gap: 0.5rem;
   }
 
+  .answer-input-section {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
   .answer-input {
     font-size: 1.5rem;
-    padding: 0.6rem;
-    width: 100px;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
+    padding: 0.8rem;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .answer-input-section .btn-primary {
+    width: 100%;
+    max-width: 200px;
   }
 
   .feedback {
@@ -997,6 +1167,31 @@ h1 {
   .modal-buttons .btn-danger {
     width: 100%;
     margin-left: 0;
+  }
+
+  .answer-options {
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  .answer-option {
+    width: 100%;
+    min-width: unset;
+    padding: 1rem;
+    font-size: 1.5rem;
+    min-height: 60px;
+  }
+
+  .mode-buttons {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .mode-button {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
   }
 }
 
