@@ -846,10 +846,134 @@ h1 {
 
 /* Responsive adjustments */
 @media (max-width: 600px) {
+  .game-container {
+    padding: 1rem;
+    border-width: 2px;
+    border-radius: 12px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .horse-emoji {
+    font-size: 3rem;
+  }
+
+  .start-screen p {
+    font-size: 1rem;
+  }
+
+  .start-screen ul {
+    font-size: 0.9rem;
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .name-input-section label {
+    font-size: 1rem;
+  }
+
+  .name-input {
+    width: 90%;
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+  }
+
+  .btn-primary {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .btn-secondary {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .stats {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+
+  .stat {
+    min-width: 45%;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+  }
+
+  .question {
+    font-size: 2rem;
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+
+  .answer-input {
+    font-size: 1.5rem;
+    padding: 0.6rem;
+    width: 100px;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .feedback {
+    font-size: 1rem;
+    padding: 0.8rem;
+  }
+
+  .finish-screen h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .final-stats {
+    padding: 1rem;
+  }
+
+  .final-stat {
+    padding: 0.8rem;
+    flex-direction: column;
+    gap: 0.3rem;
+    text-align: center;
+  }
+
+  .final-stat-label {
+    font-size: 0.9rem;
+  }
+
+  .final-stat-value {
+    font-size: 1.3rem;
+  }
+
+  .modal-overlay {
+    padding: 1rem;
+  }
+
+  .modal-content {
+    padding: 1rem;
+    width: 95%;
+  }
+
+  .modal-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
   .leaderboard-entry {
     grid-template-columns: 30px 1fr;
     gap: 0.5rem;
     font-size: 0.85rem;
+    padding: 0.8rem;
   }
   
   .leaderboard-entry .player-answers,
@@ -857,16 +981,37 @@ h1 {
     grid-column: 2;
     font-size: 0.75rem;
   }
-  
-  .modal-content {
-    padding: 1.5rem;
-  }
-  
-  .btn-secondary,
+
   .btn-danger {
     margin-left: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-buttons .btn-primary,
+  .modal-buttons .btn-danger {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+/* Tablet and small desktop adjustments */
+@media (min-width: 601px) and (max-width: 768px) {
+  .game-container {
+    max-width: 90%;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .question {
+    font-size: 2.5rem;
   }
 }
 </style>

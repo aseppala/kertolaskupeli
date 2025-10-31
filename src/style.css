@@ -27,10 +27,11 @@ body {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #F093FB 75%, #F5576C 100%);
   position: relative;
+  overflow-x: hidden;
 }
 
 body::before {
-  content: '🦄 ✨ � � ⭐';
+  content: '🦄 ✨ 🌈 💫 ⭐';
   position: fixed;
   top: 50%;
   left: 50%;
@@ -48,6 +49,18 @@ body::before {
   align-items: center;
   justify-content: center;
   padding: 2rem;
+}
+
+@media (max-width: 600px) {
+  body::before {
+    font-size: 4rem;
+  }
+
+  #app {
+    padding: 0.5rem;
+    align-items: flex-start;
+    padding-top: 1rem;
+  }
 }
 
 button {
