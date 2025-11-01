@@ -397,8 +397,11 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-if="feedback" class="feedback" :class="{ 'correct': feedback.includes('🦄') && feedback.includes('Oikein'), 'incorrect': feedback.includes('🦄') && feedback.includes('Väärin') }">
-        {{ feedback }}
+      <!-- Feedback overlay - appears on top without moving content -->
+      <div v-if="feedback" class="feedback-overlay">
+        <div class="feedback" :class="{ 'correct': feedback.includes('🦄') && feedback.includes('Oikein'), 'incorrect': feedback.includes('🦄') && feedback.includes('Väärin') }">
+          {{ feedback }}
+        </div>
       </div>
     </div>
 
@@ -706,14 +709,25 @@ h1 {
   background-color: #ecf0f1;
 }
 
+.feedback-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  pointer-events: none;
+  animation: fadeIn 0.3s;
+}
+
 .feedback {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
   font-size: 1.3rem;
   font-weight: bold;
-  animation: fadeIn 0.3s;
   border: 3px solid;
+  min-width: 300px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .feedback.correct {
