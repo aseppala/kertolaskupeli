@@ -610,6 +610,15 @@ h1 {
   box-shadow: 0 6px 8px rgba(147, 112, 219, 0.4);
 }
 
+@media (hover: none) {
+  .answer-option:hover:not(:disabled) {
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFF0F5 100%);
+    border-color: #FF69B4;
+    transform: none;
+    box-shadow: 0 4px 6px rgba(255, 105, 180, 0.3);
+  }
+}
+
 .answer-option:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(255, 105, 180, 0.3);
