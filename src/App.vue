@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
 const GAME_DURATION = 120 // 2 minutes in seconds
 const BASE_POINTS = 10
@@ -170,9 +170,11 @@ function generateQuestion() {
     // Shuffle the options
     answerOptions.value = Array.from(options).sort(() => Math.random() - 0.5)
   } else {
-    // Hard mode: clear user input and focus
+    // Hard mode: clear user input and focus (use nextTick for mobile)
     userAnswer.value = ''
-    answerInputRef.value?.focus()
+    nextTick(() => {
+      answerInputRef.value?.focus()
+    })
   }
   
   questionStartTime.value = Date.now()
@@ -386,6 +388,7 @@ onUnmounted(() => {
             v-model="userAnswer"
             ref="answerInputRef"
             type="number"
+            inputmode="numeric"
             class="answer-input"
             placeholder="?"
             :disabled="feedback !== ''"
