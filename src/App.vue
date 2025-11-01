@@ -8,7 +8,8 @@ const GOAL_TIME_PER_ANSWER = 1.875 // Target seconds per answer (120/64)
 const MAX_TIME_BONUS = 10 // Maximum bonus points for fastest answers
 const STREAK_THRESHOLD = 3
 const STREAK_BONUS = 5
-const LEADERBOARD_KEY = 'unicorn-math-leaderboard'
+const LEADERBOARD_KEY_EASY = 'unicorn-math-leaderboard-easy'
+const LEADERBOARD_KEY_HARD = 'unicorn-math-leaderboard-hard'
 const MAX_LEADERBOARD_ENTRIES = 10
 
 interface LeaderboardEntry {
@@ -16,6 +17,7 @@ interface LeaderboardEntry {
   score: number
   correctAnswers: number
   date: string
+  mode: 'easy' | 'hard'
 }
 
 const gameState = ref<'idle' | 'playing' | 'finished'>('idle')
@@ -66,12 +68,21 @@ const formattedTime = computed(() => {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 })
 
+const easyLeaderboard = computed(() => 
+  leaderboard.value.filter(entry => entry.mode === 'easy')
+)
+
+const hardLeaderboard = computed(() => 
+  leaderboard.value.filter(entry => entry.mode === 'hard')
+)
+
 function loadLeaderboard() {
   try {
-    const saved = localStorage.getItem(LEADERBOARD_KEY)
-    if (saved) {
-      leaderboard.value = JSON.parse(saved)
-    }
+    const keyEasy = localStorage.getItem(LEADERBOARD_KEY_EASY)
+    const keyHard = localStorage.getItem(LEADERBOARD_KEY_HARD)
+    const easyEntries: LeaderboardEntry[] = keyEasy ? JSON.parse(keyEasy) : []
+    const hardEntries: LeaderboardEntry[] = keyHard ? JSON.parse(keyHard) : []
+    leaderboard.value = [...easyEntries, ...hardEntries]
   } catch (error) {
     console.error('Failed to load leaderboard:', error)
     leaderboard.value = []
@@ -85,24 +96,32 @@ function saveToLeaderboard() {
     name: playerName.value.trim(),
     score: score.value,
     correctAnswers: correctAnswers.value,
-    date: new Date().toLocaleDateString('fi-FI')
+    date: new Date().toLocaleDateString('fi-FI'),
+    mode: gameMode.value
   }
   
-  leaderboard.value.push(entry)
-  leaderboard.value.sort((a, b) => b.score - a.score)
-  leaderboard.value = leaderboard.value.slice(0, MAX_LEADERBOARD_ENTRIES)
+  const storageKey = gameMode.value === 'easy' ? LEADERBOARD_KEY_EASY : LEADERBOARD_KEY_HARD
   
   try {
-    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard.value))
+    const saved = localStorage.getItem(storageKey)
+    const modeLeaderboard: LeaderboardEntry[] = saved ? JSON.parse(saved) : []
+    modeLeaderboard.push(entry)
+    modeLeaderboard.sort((a, b) => b.score - a.score)
+    const trimmed = modeLeaderboard.slice(0, MAX_LEADERBOARD_ENTRIES)
+    localStorage.setItem(storageKey, JSON.stringify(trimmed))
+    
+    // Reload combined leaderboard for display
+    loadLeaderboard()
   } catch (error) {
     console.error('Failed to save leaderboard:', error)
   }
 }
 
 function clearLeaderboard() {
-  if (confirm('Haluatko varmasti tyhjentää tulostaulukon?')) {
+  if (confirm('Haluatko varmasti tyhjentää molemmat tulostaulukot?')) {
     leaderboard.value = []
-    localStorage.removeItem(LEADERBOARD_KEY)
+    localStorage.removeItem(LEADERBOARD_KEY_EASY)
+    localStorage.removeItem(LEADERBOARD_KEY_HARD)
   }
 }
 
@@ -412,23 +431,51 @@ onUnmounted(() => {
     <div v-if="showLeaderboard" class="modal-overlay" @click="showLeaderboard = false">
       <div class="modal-content" @click.stop>
         <h2>🏆 Tulostaulu 🏆</h2>
-        <div v-if="leaderboard.length === 0" class="empty-leaderboard">
-          Ei vielä tuloksia. Ole ensimmäinen! 🦄
-        </div>
-        <div v-else class="leaderboard-list">
-          <div
-            v-for="(entry, index) in leaderboard"
-            :key="index"
-            class="leaderboard-entry"
-            :class="{ 'top-entry': index < 3 }"
-          >
-            <span class="rank">{{ index + 1 }}.</span>
-            <span class="player-name">{{ entry.name }}</span>
-            <span class="player-score">{{ entry.score }} p</span>
-            <span class="player-answers">{{ entry.correctAnswers }} oikein</span>
-            <span class="player-date">{{ entry.date }}</span>
+        
+        <!-- Easy Mode Leaderboard -->
+        <div class="leaderboard-section">
+          <h3>🌟 Helppo taso</h3>
+          <div v-if="easyLeaderboard.length === 0" class="empty-leaderboard">
+            Ei vielä tuloksia helpolla tasolla. 🦄
+          </div>
+          <div v-else class="leaderboard-list">
+            <div
+              v-for="(entry, index) in easyLeaderboard"
+              :key="'easy-' + index"
+              class="leaderboard-entry"
+              :class="{ 'top-entry': index < 3 }"
+            >
+              <span class="rank">{{ index + 1 }}.</span>
+              <span class="player-name">{{ entry.name }}</span>
+              <span class="player-score">{{ entry.score }} p</span>
+              <span class="player-answers">{{ entry.correctAnswers }} oikein</span>
+              <span class="player-date">{{ entry.date }}</span>
+            </div>
           </div>
         </div>
+
+        <!-- Hard Mode Leaderboard -->
+        <div class="leaderboard-section">
+          <h3>🔥 Vaikea taso</h3>
+          <div v-if="hardLeaderboard.length === 0" class="empty-leaderboard">
+            Ei vielä tuloksia vaikealla tasolla. 🦄
+          </div>
+          <div v-else class="leaderboard-list">
+            <div
+              v-for="(entry, index) in hardLeaderboard"
+              :key="'hard-' + index"
+              class="leaderboard-entry"
+              :class="{ 'top-entry': index < 3 }"
+            >
+              <span class="rank">{{ index + 1 }}.</span>
+              <span class="player-name">{{ entry.name }}</span>
+              <span class="player-score">{{ entry.score }} p</span>
+              <span class="player-answers">{{ entry.correctAnswers }} oikein</span>
+              <span class="player-date">{{ entry.date }}</span>
+            </div>
+          </div>
+        </div>
+        
         <div class="modal-buttons">
           <button @click="showLeaderboard = false" class="btn-primary">Sulje</button>
           <button @click="clearLeaderboard" class="btn-danger">Tyhjennä</button>
@@ -902,11 +949,25 @@ h1 {
   text-shadow: 2px 2px 4px rgba(147, 112, 219, 0.3);
 }
 
+.leaderboard-section {
+  margin-bottom: 2rem;
+}
+
+.leaderboard-section h3 {
+  color: #8B008B;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #FFE5F7 0%, #E0D4FF 100%);
+  border-radius: 8px;
+}
+
 .empty-leaderboard {
   text-align: center;
   color: #8B008B;
-  font-size: 1.2rem;
-  padding: 2rem;
+  font-size: 1rem;
+  padding: 1rem;
   font-style: italic;
 }
 
